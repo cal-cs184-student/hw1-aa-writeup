@@ -119,7 +119,52 @@
 		-->
 
 		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+		<p>
+			In this homework I built a software rasterizer for a simplified version of SVG. Starting from triangles given in
+			screen coordinates, it decides which pixels each triangle covers, antialiases the edges by supersampling, places
+			shapes with hierarchical transforms, blends colors across triangles with barycentric coordinates, and maps
+			textures onto them with nearest or bilinear pixel sampling and mipmap level sampling. By the end it renders every
+			provided test scene, including the color wheel, the transformed robot, and the textured maps and photos.
+		</p>
+		<p>
+			All three kinds of triangles (flat color, interpolated color, and textured) share one traversal. It walks the
+			supersamples inside the triangle's bounding box, restricted on each row to the span the triangle actually
+			covers, and tests each one against the triangle's three edges. The only thing that differs between triangle
+			types is how a covered sample gets its color, so supersampling, the speed optimizations, and the edge rules
+			apply to all of them automatically. Checked against the 32 provided reference images, 30 match byte-for-byte.
+			The other two (<code>05_lion.svg</code> and <code>06_sphere.svg</code>) differ only along their outlines. Those
+			outlines use <code>stroke-opacity</code>, which the provided SVG parser does not support.
+		</p>
+		<p>
+			<b>Extra credit completed:</b> a faster triangle rasterizer for Task 1 (per-row spans and hoisted arithmetic), with
+			byte-identical output and timing comparisons, described at the end of the Task 1 section.
+		</p>
+		<p>What I found most interesting:</p>
+		<ul>
+			<li>
+				<b>Almost everything is a sampling problem.</b> Deciding whether a pixel is inside a triangle, and looking up a
+				texture, both take a few point samples of a continuous signal. Jagged edges, broken thin triangles, dashed grid
+				lines, and sparkling city lights are all the same failure: aliasing. Each technique fixes it in a different
+				place. Supersampling takes more samples in screen space, bilinear filtering reconstructs the texture between
+				texels, and mipmapping prefilters the texture ahead of time. Measuring them side by side showed how different
+				their costs are: 16&times; supersampling made rendering 14 to 15 times slower, while mipmaps cost one third more
+				texture memory and roughly doubled the texturing time.
+			</li>
+			<li>
+				<b>Floating point makes "equivalent" formulas different.</b> The reference images are compared byte-for-byte,
+				and mathematically identical ways of computing barycentric coordinates or texel positions produced slightly
+				different pixels. I kept every optimization exact (for example, per-row spans only narrow down which samples
+				get the original edge test), and I matched the reference conventions for barycentric coordinates and texel
+				centers precisely.
+			</li>
+			<li>
+				<b>Features without reference images need their own tests.</b> Supersampling, bilinear filtering, and mipmaps
+				have no reference images, so I checked them independently. For example, I compared supersampled renders
+				against a higher-resolution render averaged down, and compared computed mipmap levels against values derived
+				from the scene geometry. These checks also exposed a bug in the provided mipmap code: the smallest mip level
+				was never computed and stayed black.
+			</li>
+		</ul>
 
 		<h2>Task 1: Drawing Single-Color Triangles</h2>
 		<h3>How I rasterize triangles</h3>
@@ -1503,9 +1548,6 @@
 				expensive, and for texture minification it only brute-forces what a mipmap lookup gets almost for free.
 			</li>
 		</ul>
-
-		<h2>(Optional) Task 7: Extra Credit - Draw Something Creative!</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
 		</div>
 	</body>
