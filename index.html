@@ -40,6 +40,44 @@
 				white-space: normal;
 				overflow-wrap: anywhere;
 			}
+
+			table.shots {
+				width: 100%;
+				border-collapse: collapse;
+				table-layout: fixed;
+			}
+
+			table.shots td {
+				padding: 4px;
+				text-align: center;
+				vertical-align: top;
+			}
+
+			table.shots img {
+				width: 100%;
+			}
+
+			/* show only the pixel inspector (x 577-799, y 0-222 of an 800 x 600 screenshot) */
+			.inspector {
+				position: relative;
+				width: 100%;
+				padding-top: 100%;
+				overflow: hidden;
+			}
+
+			table.shots .inspector img {
+				position: absolute;
+				top: 0;
+				left: -258.744395%;
+				width: 358.744395%;
+				max-width: none;
+				image-rendering: pixelated;
+			}
+
+			.note {
+				font-size: 90%;
+				color: #555;
+			}
 		</style>
 	</head>
 	<body>
@@ -391,7 +429,596 @@
 		</p>
 
 		<h2>Task 2: Antialiasing by Supersampling</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<h3>Why supersampling</h3>
+		<p>
+			With one sample per pixel, every pixel is all-or-nothing: it takes the triangle's color if its center is covered and
+			stays white otherwise. That produces jagged edges, and geometry thinner than a pixel can fall between pixel centers
+			and vanish or break apart (the magenta triangle in Task 1). The underlying problem is aliasing: a triangle edge
+			is a sharp step, which contains arbitrarily high frequencies, and one sample per pixel cannot represent them.
+		</p>
+		<p>
+			Ideally a pixel's color would be the average of the scene over the pixel's area, i.e. the fraction of the pixel the
+			triangle covers. Supersampling approximates that integral numerically: take several samples inside each pixel and
+			average them. This amounts to low-pass (box) filtering the image before it is sampled at pixel resolution, so edges
+			get intermediate shades in proportion to coverage instead of hard stair steps.
+		</p>
+		<figure>
+			<svg viewBox="0 0 608 296" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A thin triangle rasterized with 1 sample per pixel and with 16 samples per pixel" style="width:100%; max-width:640px; font-family: Inter, sans-serif;">
+			<text x="20" y="32" font-size="15" font-weight="600" fill="#222">1 sample per pixel</text>
+			<rect x="20" y="46" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="42" cy="68" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="64" y="46" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="86" cy="68" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="108" y="46" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="130" cy="68" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="152" y="46" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="174" cy="68" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="196" y="46" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="218" cy="68" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="240" y="46" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="262" cy="68" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="20" y="90" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="42" cy="112" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="64" y="90" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="86" cy="112" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="108" y="90" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="130" cy="112" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="152" y="90" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="174" cy="112" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="196" y="90" width="44" height="44" fill="#ED18ED" stroke="#bbb"/>
+			<circle cx="218" cy="112" r="3.2" fill="#222"/>
+			<rect x="240" y="90" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="262" cy="112" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="20" y="134" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="42" cy="156" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="64" y="134" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="86" cy="156" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="108" y="134" width="44" height="44" fill="#ED18ED" stroke="#bbb"/>
+			<circle cx="130" cy="156" r="3.2" fill="#222"/>
+			<rect x="152" y="134" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="174" cy="156" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="196" y="134" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="218" cy="156" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="240" y="134" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="262" cy="156" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="20" y="178" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="42" cy="200" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="64" y="178" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="86" cy="200" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="108" y="178" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="130" cy="200" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="152" y="178" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="174" cy="200" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="196" y="178" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="218" cy="200" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="240" y="178" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="262" cy="200" r="3" fill="none" stroke="#777" stroke-width="1"/>
+			<polygon points="28.8,213.2 279.6,59.2 279.6,94.4" fill="none" stroke="#1865ED" stroke-width="2"/>
+			<text x="324" y="32" font-size="15" font-weight="600" fill="#222">16 samples per pixel (4 &#215; 4)</text>
+			<rect x="324" y="46" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="329.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="368" y="46" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="373.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="412" y="46" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="417.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="417.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="417.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="417.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="456" y="46" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="461.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="461.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="461.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="461.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="500" y="46" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="505.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="505.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="505.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="505.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="84.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="544" y="46" width="44" height="44" fill="#F68BF6" stroke="#bbb"/>
+			<circle cx="549.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="51.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="549.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="62.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="62.5" r="2.2" fill="#222"/>
+			<circle cx="549.5" cy="73.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="73.5" r="2.2" fill="#222"/>
+			<circle cx="571.5" cy="73.5" r="2.2" fill="#222"/>
+			<circle cx="582.5" cy="73.5" r="2.2" fill="#222"/>
+			<circle cx="549.5" cy="84.5" r="2.2" fill="#222"/>
+			<circle cx="560.5" cy="84.5" r="2.2" fill="#222"/>
+			<circle cx="571.5" cy="84.5" r="2.2" fill="#222"/>
+			<circle cx="582.5" cy="84.5" r="2.2" fill="#222"/>
+			<rect x="324" y="90" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="329.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="368" y="90" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="373.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="412" y="90" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="417.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="417.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="417.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="417.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="456" y="90" width="44" height="44" fill="#FAC5FA" stroke="#bbb"/>
+			<circle cx="461.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="461.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="461.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="117.5" r="2.2" fill="#222"/>
+			<circle cx="461.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="128.5" r="2.2" fill="#222"/>
+			<circle cx="483.5" cy="128.5" r="2.2" fill="#222"/>
+			<circle cx="494.5" cy="128.5" r="2.2" fill="#222"/>
+			<rect x="500" y="90" width="44" height="44" fill="#F47DF4" stroke="#bbb"/>
+			<circle cx="505.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="95.5" r="2.2" fill="#222"/>
+			<circle cx="538.5" cy="95.5" r="2.2" fill="#222"/>
+			<circle cx="505.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="106.5" r="2.2" fill="#222"/>
+			<circle cx="527.5" cy="106.5" r="2.2" fill="#222"/>
+			<circle cx="538.5" cy="106.5" r="2.2" fill="#222"/>
+			<circle cx="505.5" cy="117.5" r="2.2" fill="#222"/>
+			<circle cx="516.5" cy="117.5" r="2.2" fill="#222"/>
+			<circle cx="527.5" cy="117.5" r="2.2" fill="#222"/>
+			<circle cx="538.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="505.5" cy="128.5" r="2.2" fill="#222"/>
+			<circle cx="516.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="544" y="90" width="44" height="44" fill="#FAC5FA" stroke="#bbb"/>
+			<circle cx="549.5" cy="95.5" r="2.2" fill="#222"/>
+			<circle cx="560.5" cy="95.5" r="2.2" fill="#222"/>
+			<circle cx="571.5" cy="95.5" r="2.2" fill="#222"/>
+			<circle cx="582.5" cy="95.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="549.5" cy="106.5" r="2.2" fill="#222"/>
+			<circle cx="560.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="106.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="549.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="117.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="549.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="128.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="324" y="134" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="329.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="368" y="134" width="44" height="44" fill="#FDF0FD" stroke="#bbb"/>
+			<circle cx="373.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="172.5" r="2.2" fill="#222"/>
+			<rect x="412" y="134" width="44" height="44" fill="#F8A8F8" stroke="#bbb"/>
+			<circle cx="417.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="417.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="150.5" r="2.2" fill="#222"/>
+			<circle cx="450.5" cy="150.5" r="2.2" fill="#222"/>
+			<circle cx="417.5" cy="161.5" r="2.2" fill="#222"/>
+			<circle cx="428.5" cy="161.5" r="2.2" fill="#222"/>
+			<circle cx="439.5" cy="161.5" r="2.2" fill="#222"/>
+			<circle cx="450.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="417.5" cy="172.5" r="2.2" fill="#222"/>
+			<circle cx="428.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="456" y="134" width="44" height="44" fill="#FAC5FA" stroke="#bbb"/>
+			<circle cx="461.5" cy="139.5" r="2.2" fill="#222"/>
+			<circle cx="472.5" cy="139.5" r="2.2" fill="#222"/>
+			<circle cx="483.5" cy="139.5" r="2.2" fill="#222"/>
+			<circle cx="494.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="461.5" cy="150.5" r="2.2" fill="#222"/>
+			<circle cx="472.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="461.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="461.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="500" y="134" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="505.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="505.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="505.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="505.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="544" y="134" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="549.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="139.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="549.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="150.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="549.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="161.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="549.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="172.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="324" y="178" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="329.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="329.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="340.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="351.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="362.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="368" y="178" width="44" height="44" fill="#FCE2FC" stroke="#bbb"/>
+			<circle cx="373.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="183.5" r="2.2" fill="#222"/>
+			<circle cx="395.5" cy="183.5" r="2.2" fill="#222"/>
+			<circle cx="406.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="373.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="384.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="395.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="406.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="412" y="178" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="417.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="417.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="417.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="417.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="428.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="439.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="450.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="456" y="178" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="461.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="461.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="461.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="461.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="472.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="483.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="494.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="500" y="178" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="505.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="505.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="505.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="505.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="516.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="527.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="538.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<rect x="544" y="178" width="44" height="44" fill="#FFFFFF" stroke="#bbb"/>
+			<circle cx="549.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="183.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="549.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="194.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="549.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="205.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="549.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="560.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="571.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<circle cx="582.5" cy="216.5" r="2" fill="none" stroke="#777" stroke-width="1"/>
+			<polygon points="332.8,213.2 583.6,59.2 583.6,94.4" fill="none" stroke="#1865ED" stroke-width="2"/>
+			<circle cx="26" cy="244" r="3" fill="#222"/>
+			<text x="36" y="248" font-size="12.5" fill="#333">sample inside the triangle</text>
+			<circle cx="216" cy="244" r="3" fill="none" stroke="#777"/>
+			<text x="226" y="248" font-size="12.5" fill="#333">sample outside</text>
+			<line x1="20" y1="266" x2="34" y2="266" stroke="#1865ED" stroke-width="2"/>
+			<text x="40" y="270" font-size="12.5" fill="#333">true triangle; pixel shade = fraction of its samples inside</text>
+			</svg>
+			<figcaption>
+				The same thin triangle rasterized with 1 and 16 samples per pixel. Each pixel's shade is the fraction of its samples
+				inside the triangle. With 1 sample, only two pixels happen to have their centers inside, so the triangle breaks into
+				isolated pixels; with 16 samples, every pixel the triangle passes through gets a shade matching how much of it is
+				covered.
+			</figcaption>
+		</figure>
+
+		<h3>My algorithm and data structures</h3>
+		<p>
+			I treat supersampling as rendering a higher-resolution image and then downsampling it. With a sample rate of
+			\(n^2\) (1, 4, 9 or 16), each pixel holds an \(n \times n\) grid of samples, and <code>sample_buffer</code> stores
+			all of them as one image of \((n \cdot \text{width}) \times (n \cdot \text{height})\) <code>Color</code> values,
+			row by row. Supersample \((i, j)\) of that image sits at
+			\[ \left( \frac{i + 0.5}{n},\ \frac{j + 0.5}{n} \right) \]
+			in pixel units, i.e. at the centers of an evenly spaced \(n \times n\) grid inside pixel
+			\((\lfloor i/n \rfloor, \lfloor j/n \rfloor)\). With \(n = 1\) this is exactly the pixel center from Task 1.
+		</p>
+		<p>I changed four parts of the pipeline:</p>
+		<ol>
+			<li>
+				<b>Buffer management.</b> <code>sample_buffer</code> now has \(\text{width} \times \text{height} \times
+				\text{sample rate}\) entries. Both <code>set_sample_rate</code> (the <code>-</code>/<code>=</code> keys) and
+				<code>set_framebuffer_target</code> (window resize) resize it, and <code>clear_buffers</code> resets every sample
+				to white at the start of each frame.
+			</li>
+			<li>
+				<b>Triangle rasterization.</b> <code>rasterize_triangle</code> runs the same algorithm as in Task 1, but over
+				supersamples instead of pixels: it walks the rows of supersamples inside the triangle's bounding box, tests each
+				supersample with the three line equations, and writes the triangle's color into the covered ones. The per-row span
+				optimization from Task 1 carries over unchanged, now measured in supersamples.
+			</li>
+			<li>
+				<b>Points and lines.</b> These are not antialiased. <code>fill_pixel</code> now writes the color into all
+				\(n^2\) supersamples of the pixel, so a point or line pixel resolves to exactly its color and the canvas border
+				stays solid black at every sample rate.
+			</li>
+			<li>
+				<b>Resolving.</b> After all elements are drawn, <code>resolve_to_framebuffer</code> averages each pixel's
+				\(n^2\) supersamples (a box filter) and converts the result to 8-bit RGB. I accumulate the sum in
+				<code>double</code>, which is exact for up to 16 samples, so a pixel whose samples all share one color averages
+				back to exactly that color. Summing in <code>float</code> could instead produce, say, 0.19999 for a solid 0.2,
+				which the 8-bit conversion would round down to the next lower level. I also clamp to \([0, 1]\) before converting.
+			</li>
+		</ol>
+		<p>
+			The cost is memory and time proportional to the sample rate. At 16 samples per pixel an 800 &times; 600 window stores
+			7.68 million samples, about 92 MB at 12 bytes per <code>Color</code>, and every triangle tests up to 16 times as many
+			samples. Storing the full supersample buffer is what makes overlapping and adjacent triangles correct: each sample
+			simply keeps the color of the last triangle that covered it.
+		</p>
+		<p>
+			To check correctness, I used the fact that the view scales with the window size: rendering at 256 &times; 256 with
+			16 samples per pixel places samples at exactly the same points as rendering at 1024 &times; 1024 with 1 sample per
+			pixel and averaging each 4 &times; 4 block. Across 10 test scenes at sample rates 4 and 16, the two differed only by
+			8-bit rounding (about one level at most), apart from the pixels on stroked outlines, which are expected to differ because
+			lines are not supersampled. With 1 sample per pixel the output is byte-identical to Task 1, so all reference tests
+			that passed before still pass.
+		</p>
+
+		<h3>Results: <code>basic/test4.svg</code> at 1, 4 and 16 samples per pixel</h3>
+		<p>
+			All three screenshots use the default view (800 &times; 600) with the pixel inspector at the same spot: the top of the
+			thin magenta triangle, next to the canvas's right border.
+		</p>
+		<table class="shots">
+			<tr>
+				<td><img src="assets/task2_rate1.png" alt="test4.svg, 1 sample per pixel"/></td>
+				<td><img src="assets/task2_rate4.png" alt="test4.svg, 4 samples per pixel"/></td>
+				<td><img src="assets/task2_rate16.png" alt="test4.svg, 16 samples per pixel"/></td>
+			</tr>
+			<tr>
+				<td><div class="inspector"><img src="assets/task2_rate1.png" alt="Pixel inspector, 1 sample per pixel"/></div></td>
+				<td><div class="inspector"><img src="assets/task2_rate4.png" alt="Pixel inspector, 4 samples per pixel"/></div></td>
+				<td><div class="inspector"><img src="assets/task2_rate16.png" alt="Pixel inspector, 16 samples per pixel"/></div></td>
+			</tr>
+			<tr>
+				<td><figcaption>1 sample per pixel</figcaption></td>
+				<td><figcaption>4 samples per pixel</figcaption></td>
+				<td><figcaption>16 samples per pixel</figcaption></td>
+			</tr>
+		</table>
+		<p class="note">
+			Top row: the full screenshots. Bottom row: the pixel-inspector region of the same screenshots, enlarged on this page
+			(display cropping only; the image files are unmodified).
+		</p>
+		<p>
+			<b>1 sample per pixel.</b> Near its top vertex the magenta triangle is narrower than a pixel, so whether a pixel is
+			filled depends only on whether its center happens to land inside. The result is fully saturated pixels separated by
+			a gap: the triangle falls apart.
+		</p>
+		<p>
+			<b>4 samples per pixel.</b> The gap closes. Pixels that the triangle only partly covers now have some, but not all, of
+			their 4 samples inside and come out as lighter pink, so the thin tip becomes a continuous but faint line. The shading is
+			coarse, though: with 4 samples a pixel can only take 5 levels of coverage (0, 1/4, &hellip;, 1), which shows up as
+			blocky steps along the tip.
+		</p>
+		<p>
+			<b>16 samples per pixel.</b> The tip becomes a smooth gradient that fades out toward the vertex as the triangle gets
+			thinner. With 17 possible coverage levels the shade tracks the true covered area much more closely. The same happens
+			at the right tip of the red triangle, which is continuous at 16 samples per pixel instead of breaking into scattered
+			pixels.
+		</p>
+		<p>
+			These results are what box-filtered supersampling predicts: each pixel's color converges to the fraction of its
+			area the triangle covers. More samples per pixel means a finer estimate of that fraction, so thin features that
+			single-sample rendering drops entirely are recovered as partially covered, lighter pixels.
+		</p>
 
 		<h2>Task 3: Transforms</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
