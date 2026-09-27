@@ -78,6 +78,23 @@
 				font-size: 90%;
 				color: #555;
 			}
+
+			pre.svg-outline {
+				background: #f6f8fa;
+				padding: 10px 14px;
+				overflow-x: auto;
+				font-size: 90%;
+			}
+
+			@media print {
+				pre.svg-outline {
+					white-space: pre-wrap;
+				}
+			}
+
+			pre.svg-outline span {
+				color: #6a737d;
+			}
 		</style>
 	</head>
 	<body>
@@ -1021,7 +1038,66 @@
 		</p>
 
 		<h2>Task 3: Transforms</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<h3>Implementing the transforms</h3>
+		<p>
+			SVG transforms act on 2D points, but a translation is not a linear map in 2D, so it cannot be written as a
+			\(2 \times 2\) matrix. Homogeneous coordinates fix this: a point \((x, y)\) becomes \((x, y, 1)\), and all three
+			transforms become \(3 \times 3\) matrices that compose by matrix multiplication. Following the SVG spec, I
+			implemented
+			\[ T(d_x, d_y) = \left[\begin{array}{ccc} 1 & 0 & d_x \\ 0 & 1 & d_y \\ 0 & 0 & 1 \end{array}\right], \]
+			\[ S(s_x, s_y) = \left[\begin{array}{ccc} s_x & 0 & 0 \\ 0 & s_y & 0 \\ 0 & 0 & 1 \end{array}\right], \]
+			\[ R(\theta) = \left[\begin{array}{ccc} \cos\theta & -\sin\theta & 0 \\ \sin\theta & \cos\theta & 0 \\ 0 & 0 & 1 \end{array}\right], \]
+			where <code>rotate</code> takes \(\theta\) in degrees and converts it to radians. Rotating about a point
+			\((c_x, c_y)\), as in <code>rotate(a cx cy)</code>, is handled by the parser as
+			\(T(c_x, c_y)\,R(a)\,T(-c_x, -c_y)\). With these in place, <code>svg/transforms/robot.svg</code> (and the other
+			test files that use transforms, such as <code>09_kochcurve.svg</code>) match the reference images exactly.
+		</p>
+		<p>
+			One detail matters when writing SVG by hand: screen space has \(y\) pointing <i>down</i>, so the same matrix that
+			rotates counterclockwise in standard math coordinates appears to rotate <i>clockwise</i> on screen. To raise an arm
+			on screen I therefore use negative angles.
+		</p>
+
+		<h3>My cubeman: waving hello</h3>
+		<figure>
+			<img src="assets/task3_my_robot.png" alt="Cubeman waving with his raised right arm" style="width: 100%; max-width: 800px;"/>
+			<figcaption>
+				<a href="my_robot.svg"><code>my_robot.svg</code></a>, rendered with 16 samples per pixel (800 &times; 600).
+			</figcaption>
+		</figure>
+		<p>
+			I wanted cubeman to greet the viewer: one arm raised and waving, the other hanging relaxed, and his head tilted
+			toward the waving hand with a small smile. The yellow block is his hand, and the thin arcs on either side of it
+			follow the path the hand sweeps around the elbow, to suggest motion. I kept the original red body and proportions
+			so the change in pose stands out.
+		</p>
+		<p>
+			To make the pose, I restructured the arms from <code>robot.svg</code> into joint hierarchies. In the original file
+			each arm segment is placed with a translation only, which is enough for a straight T-pose but not for bending at
+			a joint. In <code>my_robot.svg</code> every joint is its own group: the group first translates the origin to the
+			joint, then rotates, and the segment and everything attached further down the arm are children of that group.
+			The raised arm looks like this (the polygons are omitted):
+		</p>
+		<pre class="svg-outline">&lt;g transform="translate(50 -40)"&gt;  <span>&lt;!-- shoulder --&gt;</span>
+  &lt;g transform="rotate(-40)"&gt;      <span>&lt;!-- raise arm --&gt;</span>
+    upper arm
+    &lt;g transform="translate(75 0)"&gt; <span>&lt;!-- elbow --&gt;</span>
+      &lt;g transform="rotate(-70)"&gt;   <span>&lt;!-- bend up --&gt;</span>
+        forearm, hand, arcs
+      &lt;/g&gt;
+    &lt;/g&gt;
+  &lt;/g&gt;
+&lt;/g&gt;</pre>
+		<p>
+			Because transforms compose down the hierarchy, a point on the forearm is transformed by
+			\[ T_{\text{body}}\,T_{\text{shoulder}}\,R(-40^\circ)\,T_{\text{elbow}}\,R(-70^\circ). \]
+			The forearm ends up
+			rotated by \(-110^\circ\) in total and stays attached to the upper arm at the elbow, even though I only wrote two
+			small local rotations. The hand and the motion arcs live inside the forearm's group, so they follow it
+			automatically. The relaxed arm uses the same structure with \(-75^\circ\) at the shoulder and \(-20^\circ\) at the
+			elbow, and the head is rotated \(10^\circ\) about the neck, with the eyes and mouth inside the head's group so they
+			tilt with it.
+		</p>
 
 		<h2>Task 4: Barycentric coordinates</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.

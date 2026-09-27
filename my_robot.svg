@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cubeman waving hello. Based on svg/transforms/robot.svg.
+     Arms are rebuilt as joint hierarchies: each <g> moves the origin to a joint
+     (shoulder, elbow) and rotates there, so a child segment inherits every
+     rotation above it. Screen y points down, so negative angles turn
+     counterclockwise on screen. -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px"
+	 width="500.0px" height="500.0px" viewBox="0 0 500 500">
+
+<g transform="translate(250 250)">
+	<!-- torso -->
+	<polygon fill="#EF161F" points="-50,-50 50,-50 -50,50 "/>
+	<polygon fill="#EF161F" points="-50,50 50,-50 50,50"/>
+
+	<!-- head: pivot at the neck and tilt 10 degrees toward the waving arm -->
+	<g transform="translate(0 -50)">
+		<g transform="rotate(10)">
+			<g transform="translate(0 -50)">
+				<g transform="rotate(45)">
+					<g transform="scale(.5 .5)">
+						<polygon fill="#EF161F" points="-50,-50 50,-50 -50,50 "/>
+						<polygon fill="#EF161F" points="-50,50 50,-50 50,50"/>
+					</g>
+				</g>
+				<!-- eyes -->
+				<g transform="translate(-10 -6)">
+					<g transform="scale(.08 .08)">
+						<polygon fill="#FFFFFF" points="-50,-50 50,-50 -50,50 "/>
+						<polygon fill="#FFFFFF" points="-50,50 50,-50 50,50"/>
+					</g>
+				</g>
+				<g transform="translate(10 -6)">
+					<g transform="scale(.08 .08)">
+						<polygon fill="#FFFFFF" points="-50,-50 50,-50 -50,50 "/>
+						<polygon fill="#FFFFFF" points="-50,50 50,-50 50,50"/>
+					</g>
+				</g>
+				<!-- smile -->
+				<polyline fill="none" stroke="#FFFFFF" points="-10,8 -5,12 5,12 10,8"/>
+			</g>
+		</g>
+	</g>
+
+	<!-- left leg -->
+	<g transform="translate(-40 90)">
+		<g transform="scale(.2 .6)">
+			<polygon fill="#EF161F" points="-50,-50 50,-50 -50,50 "/>
+			<polygon fill="#EF161F" points="-50,50 50,-50 50,50"/>
+		</g>
+		<g transform="translate(0 70)">
+			<g transform="scale(.2 .6)">
+				<polygon fill="#EF161F" points="-50,-50 50,-50 -50,50 "/>
+				<polygon fill="#EF161F" points="-50,50 50,-50 50,50"/>
+			</g>
+		</g>
+	</g>
+
+	<!-- right leg -->
+	<g transform="translate(40 90)">
+		<g transform="scale(.2 .6)">
+			<polygon fill="#EF161F" points="-50,-50 50,-50 -50,50 "/>
+			<polygon fill="#EF161F" points="-50,50 50,-50 50,50"/>
+		</g>
+		<g transform="translate(0 70)">
+			<g transform="scale(.2 .6)">
+				<polygon fill="#EF161F" points="-50,-50 50,-50 -50,50 "/>
+				<polygon fill="#EF161F" points="-50,50 50,-50 50,50"/>
+			</g>
+		</g>
+	</g>
+
+	<!-- left arm (screen left): relaxed, hanging down with a slight elbow bend -->
+	<g transform="translate(-50 -40)">          <!-- shoulder -->
+		<g transform="rotate(-75)">              <!-- lower the arm -->
+			<g transform="translate(-40 0)">     <!-- upper arm -->
+				<g transform="scale(.6 .2)">
+					<polygon fill="#EF161F" points="-50,-50 50,-50 -50,50 "/>
+					<polygon fill="#EF161F" points="-50,50 50,-50 50,50"/>
+				</g>
+			</g>
+			<g transform="translate(-75 0)">     <!-- elbow -->
+				<g transform="rotate(-20)">      <!-- slight bend toward the body -->
+					<g transform="translate(-35 0)">
+						<g transform="scale(.6 .2)">
+							<polygon fill="#EF161F" points="-50,-50 50,-50 -50,50 "/>
+							<polygon fill="#EF161F" points="-50,50 50,-50 50,50"/>
+						</g>
+					</g>
+				</g>
+			</g>
+		</g>
+	</g>
+
+	<!-- right arm (screen right): raised and waving -->
+	<g transform="translate(50 -40)">           <!-- shoulder -->
+		<g transform="rotate(-40)">              <!-- raise the whole arm -->
+			<g transform="translate(40 0)">      <!-- upper arm -->
+				<g transform="scale(.6 .2)">
+					<polygon fill="#EF161F" points="-50,-50 50,-50 -50,50 "/>
+					<polygon fill="#EF161F" points="-50,50 50,-50 50,50"/>
+				</g>
+			</g>
+			<g transform="translate(75 0)">      <!-- elbow -->
+				<g transform="rotate(-70)">      <!-- bend the forearm up; total -110 degrees -->
+					<g transform="translate(35 0)">
+						<g transform="scale(.6 .2)">
+							<polygon fill="#EF161F" points="-50,-50 50,-50 -50,50 "/>
+							<polygon fill="#EF161F" points="-50,50 50,-50 50,50"/>
+						</g>
+					</g>
+					<!-- hand -->
+					<g transform="translate(76 0)">
+						<g transform="scale(.24 .24)">
+							<polygon fill="#FFC72C" points="-50,-50 50,-50 -50,50 "/>
+							<polygon fill="#FFC72C" points="-50,50 50,-50 50,50"/>
+						</g>
+					</g>
+					<!-- motion arcs on both sides of the hand, centered on the elbow -->
+					<polyline fill="none" stroke="#333333" points="67.9,16.9 66.2,22.8 63.9,28.5 61.2,33.9 58.0,39.1"/>
+					<polyline fill="none" stroke="#333333" points="81.5,20.3 79.4,27.3 76.7,34.2 73.5,40.7 69.6,47.0"/>
+					<polyline fill="none" stroke="#333333" points="67.9,-16.9 66.2,-22.8 63.9,-28.5 61.2,-33.9 58.0,-39.1"/>
+					<polyline fill="none" stroke="#333333" points="81.5,-20.3 79.4,-27.3 76.7,-34.2 73.5,-40.7 69.6,-47.0"/>
+				</g>
+			</g>
+		</g>
+	</g>
+
+</g>
+
+</svg>
