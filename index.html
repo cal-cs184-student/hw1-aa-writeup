@@ -23,25 +23,37 @@
 			body {
 				font-family: 'Inter', sans-serif;
 			}
+
+			table.timing {
+				border-collapse: collapse;
+				margin: 0 auto;
+				max-width: 100%;
+			}
+
+			table.timing th, table.timing td {
+				border: 1px solid #ccc;
+				padding: 4px 10px;
+				white-space: nowrap;
+			}
+
+			table.timing td:first-child {
+				white-space: normal;
+				overflow-wrap: anywhere;
+			}
 		</style>
 	</head>
 	<body>
 		<div class="container">
 		<h1>CS184/284A Fall 2026 Homework 1 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+		<div style="text-align: center;">Names: Ziniu Zheng</div>
 
 		<br>
 
-		Link to webpage: (TODO) <a href="https://cs184.eecs.berkeley.edu/fa26">cs184.eecs.berkeley.edu/fa26</a>
+		Link to webpage: <a href="https://cal-cs184-student.github.io/hw1-aa-writeup/">https://cal-cs184-student.github.io/hw1-aa-writeup/</a>
 		
 		<br>
 
-		Link to GitHub repository: (TODO) <a href="https://cs184.eecs.berkeley.edu/fa26">cs184.eecs.berkeley.edu/fa26</a>
-
-		<figure>
-			<img src="assets/lion.jpg" alt="Lion" style="width:50%"/>
-			<figcaption>You can add images with captions!</figcaption>
-		</figure>
+		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw1-aa">https://github.com/cal-cs184-student/hw1-aa</a>
 
 		<!--
 		We've already added one heading per task, to make your write-up as navigable when grading. Please fit your write-up within these sections!
@@ -51,34 +63,333 @@
 		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
 
 		<h2>Task 1: Drawing Single-Color Triangles</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<h3>How I rasterize triangles</h3>
+		<p>
+			By the time a triangle reaches <code>rasterize_triangle</code>, its three vertices \(P_0, P_1, P_2\) are already in
+			screen space (pixel units, floating point). My rasterizer turns that continuous triangle into a set of covered
+			pixels in three steps.
+		</p>
+		<ol>
+			<li>
+				<b>Bounding box.</b> I take the minimum and maximum of the vertices' \(x\) and \(y\) coordinates, round them
+				outward to whole pixels, and clamp the result to the framebuffer. Only pixels inside this box can possibly be
+				covered, so they are the only ones visited; parts of a triangle that fall off screen cost nothing.
+			</li>
+			<li>
+				<b>One sample per pixel, at the pixel center.</b> For pixel \((x, y)\) the sample point is
+				\((x + 0.5, y + 0.5)\), not the pixel's corner.
+			</li>
+			<li>
+				<b>Three line tests.</b> For the edge from \(P_i\) to \(P_j\), with \(\Delta x_{ij} = x_j - x_i\) and
+				\(\Delta y_{ij} = y_j - y_i\), the line equation
+				\[ L_{ij}(x, y) = (y - y_i)\,\Delta x_{ij} - (x - x_i)\,\Delta y_{ij} \]
+				is the 2D cross product of the edge vector with the vector from \(P_i\) to the sample. It is zero on the line
+				through the edge and has opposite signs on its two sides. A sample is inside the triangle exactly when it lies
+				on the same side of all three edges.
+			</li>
+		</ol>
+		<p>
+			Which sign counts as "inside" depends on the winding order: counter-clockwise and clockwise triangles give
+			opposite signs. Instead of reordering vertices, I accept a sample when all three values are \(\ge 0\)
+			<i>or</i> all three are \(\le 0\), so both windings render correctly (<code>svg/basic/test6.svg</code> checks
+			this). Because the comparisons include equality, a sample lying exactly on an edge counts as inside, so no edge
+			is left un-rasterized and two triangles that share an edge never leave a crack between them. Every covered pixel
+			is written with <code>fill_pixel</code>, and <code>resolve_to_framebuffer</code> later converts the stored
+			colors to 8-bit RGB for display.
+		</p>
+		<figure>
+			<svg viewBox="0 0 570 593" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Triangle, bounding box, pixel-center samples and one row span" style="width:100%; max-width:560px; font-family: Inter, sans-serif;">
+			<rect x="98" y="268" width="272" height="34" fill="#fff1b8"/>
+			<line x1="30" y1="30" x2="30" y2="438" stroke="#ddd"/>
+			<line x1="64" y1="30" x2="64" y2="438" stroke="#ddd"/>
+			<line x1="98" y1="30" x2="98" y2="438" stroke="#ddd"/>
+			<line x1="132" y1="30" x2="132" y2="438" stroke="#ddd"/>
+			<line x1="166" y1="30" x2="166" y2="438" stroke="#ddd"/>
+			<line x1="200" y1="30" x2="200" y2="438" stroke="#ddd"/>
+			<line x1="234" y1="30" x2="234" y2="438" stroke="#ddd"/>
+			<line x1="268" y1="30" x2="268" y2="438" stroke="#ddd"/>
+			<line x1="302" y1="30" x2="302" y2="438" stroke="#ddd"/>
+			<line x1="336" y1="30" x2="336" y2="438" stroke="#ddd"/>
+			<line x1="370" y1="30" x2="370" y2="438" stroke="#ddd"/>
+			<line x1="404" y1="30" x2="404" y2="438" stroke="#ddd"/>
+			<line x1="438" y1="30" x2="438" y2="438" stroke="#ddd"/>
+			<line x1="472" y1="30" x2="472" y2="438" stroke="#ddd"/>
+			<line x1="506" y1="30" x2="506" y2="438" stroke="#ddd"/>
+			<line x1="540" y1="30" x2="540" y2="438" stroke="#ddd"/>
+			<line x1="30" y1="30" x2="540" y2="30" stroke="#ddd"/>
+			<line x1="30" y1="64" x2="540" y2="64" stroke="#ddd"/>
+			<line x1="30" y1="98" x2="540" y2="98" stroke="#ddd"/>
+			<line x1="30" y1="132" x2="540" y2="132" stroke="#ddd"/>
+			<line x1="30" y1="166" x2="540" y2="166" stroke="#ddd"/>
+			<line x1="30" y1="200" x2="540" y2="200" stroke="#ddd"/>
+			<line x1="30" y1="234" x2="540" y2="234" stroke="#ddd"/>
+			<line x1="30" y1="268" x2="540" y2="268" stroke="#ddd"/>
+			<line x1="30" y1="302" x2="540" y2="302" stroke="#ddd"/>
+			<line x1="30" y1="336" x2="540" y2="336" stroke="#ddd"/>
+			<line x1="30" y1="370" x2="540" y2="370" stroke="#ddd"/>
+			<line x1="30" y1="404" x2="540" y2="404" stroke="#ddd"/>
+			<line x1="30" y1="438" x2="540" y2="438" stroke="#ddd"/>
+			<rect x="64" y="64" width="442" height="340" fill="none" stroke="#888" stroke-dasharray="6 4" stroke-width="1.5"/>
+			<polygon points="84.4,87.8 451.6,172.8 176.2,353" fill="#1865ED" fill-opacity="0.12" stroke="#1865ED" stroke-width="2"/>
+			<circle cx="81" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="115" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="149" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="183" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="217" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="251" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="285" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="319" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="353" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="387" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="421" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="455" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="489" cy="81" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="81" cy="115" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="115" cy="115" r="4.5" fill="#1865ED"/>
+			<circle cx="149" cy="115" r="4.5" fill="#1865ED"/>
+			<circle cx="183" cy="115" r="4.5" fill="#1865ED"/>
+			<circle cx="217" cy="115" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="251" cy="115" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="285" cy="115" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="319" cy="115" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="353" cy="115" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="387" cy="115" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="421" cy="115" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="455" cy="115" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="489" cy="115" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="81" cy="149" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="115" cy="149" r="4.5" fill="#1865ED"/>
+			<circle cx="149" cy="149" r="4.5" fill="#1865ED"/>
+			<circle cx="183" cy="149" r="4.5" fill="#1865ED"/>
+			<circle cx="217" cy="149" r="4.5" fill="#1865ED"/>
+			<circle cx="251" cy="149" r="4.5" fill="#1865ED"/>
+			<circle cx="285" cy="149" r="4.5" fill="#1865ED"/>
+			<circle cx="319" cy="149" r="4.5" fill="#1865ED"/>
+			<circle cx="353" cy="149" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="387" cy="149" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="421" cy="149" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="455" cy="149" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="489" cy="149" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="81" cy="183" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="115" cy="183" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="149" cy="183" r="4.5" fill="#1865ED"/>
+			<circle cx="183" cy="183" r="4.5" fill="#1865ED"/>
+			<circle cx="217" cy="183" r="4.5" fill="#1865ED"/>
+			<circle cx="251" cy="183" r="4.5" fill="#1865ED"/>
+			<circle cx="285" cy="183" r="4.5" fill="#1865ED"/>
+			<circle cx="319" cy="183" r="4.5" fill="#1865ED"/>
+			<circle cx="353" cy="183" r="4.5" fill="#1865ED"/>
+			<circle cx="387" cy="183" r="4.5" fill="#1865ED"/>
+			<circle cx="421" cy="183" r="4.5" fill="#1865ED"/>
+			<circle cx="455" cy="183" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="489" cy="183" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="81" cy="217" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="115" cy="217" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="149" cy="217" r="4.5" fill="#1865ED"/>
+			<circle cx="183" cy="217" r="4.5" fill="#1865ED"/>
+			<circle cx="217" cy="217" r="4.5" fill="#1865ED"/>
+			<circle cx="251" cy="217" r="4.5" fill="#1865ED"/>
+			<circle cx="285" cy="217" r="4.5" fill="#1865ED"/>
+			<circle cx="319" cy="217" r="4.5" fill="#1865ED"/>
+			<circle cx="353" cy="217" r="4.5" fill="#1865ED"/>
+			<circle cx="387" cy="217" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="421" cy="217" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="455" cy="217" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="489" cy="217" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="81" cy="251" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="115" cy="251" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="149" cy="251" r="4.5" fill="#1865ED"/>
+			<circle cx="183" cy="251" r="4.5" fill="#1865ED"/>
+			<circle cx="217" cy="251" r="4.5" fill="#1865ED"/>
+			<circle cx="251" cy="251" r="4.5" fill="#1865ED"/>
+			<circle cx="285" cy="251" r="4.5" fill="#1865ED"/>
+			<circle cx="319" cy="251" r="4.5" fill="#1865ED"/>
+			<circle cx="353" cy="251" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="387" cy="251" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="421" cy="251" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="455" cy="251" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="489" cy="251" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<path d="M77 281L85 289M77 289L85 281" stroke="#bbb" stroke-width="1.5"/>
+			<circle cx="115" cy="285" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="149" cy="285" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="183" cy="285" r="4.5" fill="#1865ED"/>
+			<circle cx="217" cy="285" r="4.5" fill="#1865ED"/>
+			<circle cx="251" cy="285" r="4.5" fill="#1865ED"/>
+			<circle cx="285" cy="285" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="319" cy="285" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="353" cy="285" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<path d="M383 281L391 289M383 289L391 281" stroke="#bbb" stroke-width="1.5"/>
+			<path d="M417 281L425 289M417 289L425 281" stroke="#bbb" stroke-width="1.5"/>
+			<path d="M451 281L459 289M451 289L459 281" stroke="#bbb" stroke-width="1.5"/>
+			<path d="M485 281L493 289M485 289L493 281" stroke="#bbb" stroke-width="1.5"/>
+			<circle cx="81" cy="319" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="115" cy="319" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="149" cy="319" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="183" cy="319" r="4.5" fill="#1865ED"/>
+			<circle cx="217" cy="319" r="4.5" fill="#1865ED"/>
+			<circle cx="251" cy="319" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="285" cy="319" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="319" cy="319" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="353" cy="319" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="387" cy="319" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="421" cy="319" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="455" cy="319" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="489" cy="319" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="81" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="115" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="149" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="183" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="217" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="251" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="285" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="319" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="353" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="387" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="421" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="455" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="489" cy="353" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="81" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="115" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="149" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="183" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="217" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="251" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="285" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="319" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="353" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="387" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="421" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="455" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<circle cx="489" cy="387" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<line x1="152.662" y1="285" x2="280.125" y2="285" stroke="#c0392b" stroke-width="2.5"/>
+			<line x1="152.662" y1="278" x2="152.662" y2="292" stroke="#c0392b" stroke-width="2.5"/>
+			<line x1="280.125" y1="278" x2="280.125" y2="292" stroke="#c0392b" stroke-width="2.5"/>
+			<text x="58.4" y="83.8" font-size="14" fill="#1865ED" font-weight="600">P0</text>
+			<text x="457.6" y="164.8" font-size="14" fill="#1865ED" font-weight="600">P1</text>
+			<text x="168.2" y="373" font-size="14" fill="#1865ED" font-weight="600">P2</text>
+			<circle cx="38" cy="478" r="4.5" fill="#1865ED"/>
+			<text x="52" y="482" font-size="12.5" fill="#333">sample inside: filled</text>
+			<circle cx="38" cy="500" r="4" fill="white" stroke="#999" stroke-width="1.3"/>
+			<text x="52" y="504" font-size="12.5" fill="#333">sample outside: not filled</text>
+			<path d="M34 518L42 526M34 526L42 518" stroke="#bbb" stroke-width="1.5"/>
+			<text x="52" y="526" font-size="12.5" fill="#333">skipped by the row span (optimized version)</text>
+			<rect x="30" y="538" width="16" height="12" fill="#fff1b8"/>
+			<line x1="30" y1="544" x2="46" y2="544" stroke="#c0392b" stroke-width="2.5"/>
+			<text x="52" y="548" font-size="12.5" fill="#333">row span [lo, hi]; shaded cells = padded range that is tested</text>
+			<rect x="30" y="560" width="16" height="12" fill="none" stroke="#888" stroke-dasharray="4 3" stroke-width="1.5"/>
+			<text x="52" y="570" font-size="12.5" fill="#333">bounding box: the pixels visited</text>
+			</svg>
+			<figcaption>
+				Rasterizing one triangle. Only pixels inside the dashed bounding box are visited, each is sampled once at its
+				center, and a sample is filled when all three line tests agree. The highlighted row illustrates the per-row span
+				used by the optimized version (extra credit, below).
+			</figcaption>
+		</figure>
 
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
-		<div style="display: flex; flex-direction: column; align-items: center;">
-			<table style="width: 100%; text-align: center; border-collapse: collapse;">
-			  <tr>
-				<td style="text-align: center;">
-				  <img src="assets/lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-				<td style="text-align: center;">
-				  <img src="assets/lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-			  </tr>
-			  <tr>
-				<td style="text-align: center;">
-				  <img src="assets/lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-				<td style="text-align: center;">
-				  <img src="assets/lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-			  </tr>
-			</table>
-		</div>
-		
+		<h3>Why this is no worse than checking every sample in the bounding box</h3>
+		<p>
+			My basic implementation <i>is</i> the bounding-box algorithm: it visits every pixel inside the triangle's bounding
+			box exactly once and does a constant amount of work per pixel (three line equations and a sign check). Its cost is
+			therefore proportional to the area of the bounding box, and it never scans the whole framebuffer. The bounding box
+			is also clamped to the screen, so it can only shrink.
+		</p>
+		<p>
+			The optimized version described in the extra credit below goes further: on each row it tests only a sub-range of
+			the bounding box's pixels, and the extra bookkeeping is a constant amount of work per row. Since it tests a subset
+			of the same samples with the same test, it never does more per-sample work than the bounding-box algorithm.
+		</p>
+
+		<h3>Result: <code>basic/test4.svg</code></h3>
+		<figure>
+			<img src="assets/task1_test4.png" alt="basic/test4.svg rendered with 1 sample per pixel, pixel inspector on the thin magenta triangle" style="width: 100%; max-width: 800px;"/>
+			<figcaption>
+				<code>basic/test4.svg</code> with the default view (800 &times; 600, 1 sample per pixel). The pixel inspector
+				(top right) is centered on the top of the thin magenta triangle, next to the canvas's right border (the black
+				vertical line).
+			</figcaption>
+		</figure>
+		<p>
+			The magenta triangle is one continuous shape, but near its top vertex it is narrower than a pixel. With only one
+			sample per pixel, a pixel is filled only if its exact center falls inside the triangle, and most centers there
+			miss it. In the inspector, the triangle shows up as a short isolated run of pixels, then a gap, then the rest of
+			the triangle; the right tip of the thin red triangle breaks into scattered pixels for the same reason. This is
+			aliasing: a single point sample cannot represent geometry smaller than a pixel. Supersampling in Task 2 addresses
+			it.
+		</p>
+
+		<h3>Extra credit: a faster triangle rasterizer</h3>
+		<p>
+			The reference images are compared byte-for-byte, so I set one hard constraint: the optimized rasterizer must
+			produce <i>exactly</i> the same pixels as the basic one. That ruled out the classic incremental trick of adding a
+			constant to each edge value per pixel, because accumulated floating-point error flips samples that lie right on an
+			edge. Within that constraint I made four changes.
+		</p>
+		<ol>
+			<li>
+				<b>Per-row spans instead of the full bounding box.</b> On a fixed row \(y_s\), the term
+				\(r_k = (y_s - y_k)\,\Delta x_k\) of edge \(k\)'s line equation is a constant, so the equation is a linear
+				function of the sample's \(x_s\):
+				\[ L_k(x_s) = r_k - (x_s - x_k)\,\Delta y_k. \]
+				The sign of the triangle's signed area tells me which sign means "inside", so each edge's inside condition
+				becomes a half-line, \(x_s \le x_k + r_k / \Delta y_k\) or \(x_s \ge x_k + r_k / \Delta y_k\) depending on the
+				sign of \(\Delta y_k\). Intersecting the three half-lines gives the interval \([lo, hi]\) that the triangle
+				covers on that row, and I only test pixels in that interval. A horizontal edge (\(\Delta y_k = 0\)) either
+				accepts or rejects the entire row, so rejected rows are skipped without testing any pixel.
+			</li>
+			<li>
+				<b>Exact results despite rounding.</b> The span only decides <i>which</i> pixels to test. I pad it by one pixel
+				on each side, and every pixel in it still goes through the original three line tests, so rounding error in
+				\(lo\) or \(hi\) can never add or drop a sample. Degenerate triangles (zero area) have no meaningful inside
+				sign, so they fall back to the plain bounding-box scan and behave exactly as before.
+			</li>
+			<li>
+				<b>Hoisting loop-invariant work.</b> The edge vectors \(\Delta x_k, \Delta y_k\) are computed once per
+				triangle, and the \(y\)-only term \(r_k\) once per row, leaving one subtraction, one multiplication and one
+				more subtraction per edge in the inner loop. Writing \(-ab + r\) as \(r - ab\) is bit-for-bit identical in
+				IEEE floating point, so this does not change the output either.
+			</li>
+			<li>
+				<b>Cheaper setup.</b> The bounding box is clamped in floating point before converting to integers, so vertices
+				far off screen cannot overflow an <code>int</code>, and triangles that are entirely off screen return
+				immediately.
+			</li>
+		</ol>
+		<p>
+			To check correctness, I rendered all 32 provided SVGs plus 8 randomly generated stress scenes with both versions
+			and compared the PNG files byte-for-byte: all 40 were identical. The stress scenes target the risky cases: 3000
+			random triangles of both windings, 3000 long slivers, 3000 degenerate triangles (collinear or repeated vertices),
+			vertices on integer and half-integer coordinates (so edges pass exactly through sample points), sub-pixel
+			triangles, and huge triangles reaching \(\pm 10^6\) pixels. The provided reference tests that passed before still
+			pass.
+		</p>
+		<p>
+			Timings are the average of 20 consecutive <code>svg.draw()</code> calls in <code>DrawRend::redraw()</code>
+			(measured with <code>std::chrono::high_resolution_clock</code>), median of 3 runs; Release build (MSVC
+			<code>/O2</code>) on an Intel Core i9-12900H, 1024 &times; 1024 framebuffer, 1 sample per pixel.
+		</p>
+		<table class="timing">
+			<tr><th>Scene</th><th>Basic (ms)</th><th>Optimized (ms)</th><th>Speedup</th></tr>
+			<tr><td><code>basic/test3.svg</code></td><td>8.75</td><td>4.29</td><td>2.0x</td></tr>
+			<tr><td><code>basic/test4.svg</code></td><td>0.44</td><td>0.23</td><td>1.9x</td></tr>
+			<tr><td><code>illustration/04_sun.svg</code></td><td>4.83</td><td>1.73</td><td>2.8x</td></tr>
+			<tr><td><code>subdiv/triangle7.svg</code></td><td>4.90</td><td>1.03</td><td>4.7x</td></tr>
+			<tr><td><code>hardcore/02_degenerate_square2.svg</code></td><td>529.5</td><td>14.5</td><td>36.4x</td></tr>
+			<tr><td>400 random large triangles</td><td>114.3</td><td>41.0</td><td>2.8x</td></tr>
+			<tr><td>3000 thin slivers</td><td>368.1</td><td>21.3</td><td>17.3x</td></tr>
+			<tr><td>400 thin diagonal triangles</td><td>429.6</td><td>8.8</td><td>48.7x</td></tr>
+			<tr><td>3000 sub-pixel triangles</td><td>0.75</td><td>0.80</td><td>0.9x</td></tr>
+		</table>
+		<p>
+			The speedup tracks how much of a triangle's bounding box is empty. A typical large triangle covers roughly half of
+			its box, so skipping the empty half (together with the hoisting) gives about 2&ndash;3x on the provided
+			illustrations and on random large triangles. Long thin triangles are the extreme case:
+			<code>02_degenerate_square2.svg</code> is a fan of 1000 slivers from one corner of the canvas, each only
+			one SVG unit wide at its far end but with a bounding box that can cover most of the canvas, so almost every
+			sample in those boxes is wasted by the basic version; the span version is 36x faster, and thin diagonal triangles reach almost 50x. The one case with no gain is sub-pixel
+			triangles: their bounding box is only one or two pixels, there is nothing to skip, and the per-row span setup
+			costs slightly more than it saves.
+		</p>
+
 		<h2>Task 2: Antialiasing by Supersampling</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
@@ -97,16 +408,6 @@
 		<h2>(Optional) Task 7: Extra Credit - Draw Something Creative!</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
 		</div>
 	</body>
 </html>
