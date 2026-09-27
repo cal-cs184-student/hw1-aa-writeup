@@ -36,6 +36,10 @@
 				white-space: nowrap;
 			}
 
+			table.timing th {
+				white-space: normal;
+			}
+
 			table.timing td:first-child {
 				white-space: normal;
 				overflow-wrap: anywhere;
@@ -1329,7 +1333,176 @@
 		</p>
 
 		<h2>Task 6: "Level Sampling" with mipmaps for texture mapping</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<h3>What level sampling is</h3>
+		<p>
+			Pixel sampling (Task 5) reads one or four texels per sample. That works when a screen pixel covers about one
+			texel, but when a texture is <i>minified</i>, a single pixel's footprint can span many texels. Reading one or four
+			of them then samples the texture far below its own resolution, so fine detail aliases into noise and sparkle.
+			Ideally the pixel would get the average of every texel under its footprint, but computing that per sample is
+			expensive.
+		</p>
+		<p>
+			A <b>mipmap</b> precomputes those averages. Level 0 is the full-resolution texture, and each further level halves
+			the width and height by averaging blocks of the previous level, so one texel of level \(k\) summarizes a
+			\(2^k \times 2^k\) block of level 0. <b>Level sampling</b> picks, for each sample, the level whose texels are about
+			as large as the pixel's footprint, so that a single lookup already approximates the area average.
+		</p>
+		<p>
+			The footprint comes from how fast the texture coordinates change across the screen. If moving one pixel in
+			\(x\) or \(y\) moves the texture position by the vectors \(\partial(u,v)/\partial x\) and
+			\(\partial(u,v)/\partial y\), measured in texels of level 0, then the footprint is about
+			\[ L = \max\left( \left\| \frac{\partial (u,v)}{\partial x} \right\|,\ \left\| \frac{\partial (u,v)}{\partial y} \right\| \right) \]
+			texels wide, and the matching level is \(D = \log_2 L\). The three level sampling modes use \(D\) differently:
+		</p>
+		<ul>
+			<li><code>L_ZERO</code>: ignore \(D\) and always sample level 0 (Task 5's behavior).</li>
+			<li><code>L_NEAREST</code>: round \(D\) and sample that single level.</li>
+			<li>
+				<code>L_LINEAR</code>: sample levels \(\lfloor D \rfloor\) and \(\lfloor D \rfloor + 1\) and blend them by the
+				fractional part of \(D\). Combined with bilinear pixel sampling this is <i>trilinear</i> filtering.
+			</li>
+		</ul>
+
+		<h3>How I implemented it</h3>
+		<p>
+			In <code>rasterize_textured_triangle</code>, besides the texture coordinates at the sample \((x, y)\), I compute
+			them at \((x + 1, y)\) and \((x, y + 1)\) and store all three in <code>SampleParams</code>. The line equations are
+			linear, so moving one pixel changes each of them by a constant (\(-\Delta y\) of the edge for a step in \(x\),
+			\(+\Delta x\) for a step in \(y\)). That gives the neighbors' barycentric coordinates without re-evaluating
+			the equations. <code>Texture::get_level</code> subtracts to get the two difference vectors, scales them by the
+			full-resolution width and height to measure them in texels, and returns \(\log_2\) of the longer one.
+			<code>Texture::sample</code> then chooses the level (or pair of levels) by <code>lsm</code>, clamps it to the
+			levels that exist, and samples each level with nearest or bilinear pixel sampling. A degenerate footprint, which
+			gives an undefined level, falls back to level 0.
+		</p>
+		<p>
+			To check the level computation, I derived the exact level from the SVG geometry of <code>texmap/test1.svg</code>
+			at seven screen positions and compared it with the level my code computes there (rendered as grayscale). They
+			agreed to within the precision of the 8-bit visualization, for example 1.49 vs. 1.44 at the center of the map and
+			2.62 vs. 2.57 near its edge.
+		</p>
+		<p>
+			<b>A bug in the starter code.</b> <code>generate_mips</code> allocates every mipmap level, but its loop stopped one
+			level short, so the smallest level (1 &times; 1) was never computed and stayed black. Printing the average
+			value of each level confirmed it: for the parrot texture the last level averaged 0.0, while the level above it
+			averaged 102.6. Strongly minified surfaces that reach that level would therefore have faded toward black. I fixed
+			the loop bound, and the last level now averages 102.0, in line with the others.
+		</p>
+
+		<h3>My image and scene</h3>
+		<p>
+			I used a photo I took of Tokyo at night (<a href="tokyo_night.png"><code>tokyo_night.png</code></a>), which is
+			full of tiny, high-contrast lights and windows: exactly the kind of detail that aliases badly when minified. I
+			converted it from JPEG to PNG, cropped out the empty sky, scaled it to 1512 &times; 1066, and stripped its
+			metadata (including GPS location). <a href="tokyo_night.svg"><code>tokyo_night.svg</code></a> maps it onto a
+			ground plane seen in perspective, built from a 24 &times; 24 grid of textured triangles whose vertices and texture
+			coordinates follow the exact perspective projection. The texture is only slightly minified near the bottom of
+			the view and more and more strongly toward the far edge at the top, so one image spans many mipmap levels.
+		</p>
+
+		<h3>Results</h3>
+		<p>
+			All four screenshots use the default view (800 &times; 600) and 1 sample per pixel, with the pixel inspector at the
+			same spot in the far, strongly minified part of the image.
+		</p>
+		<table class="shots">
+			<tr>
+				<td><img src="assets/task6_zero_nearest.png" alt="L_ZERO and P_NEAREST"/></td>
+				<td><img src="assets/task6_zero_bilinear.png" alt="L_ZERO and P_LINEAR"/></td>
+			</tr>
+			<tr>
+				<td><div class="inspector"><img src="assets/task6_zero_nearest.png" alt="Pixel inspector, L_ZERO and P_NEAREST"/></div></td>
+				<td><div class="inspector"><img src="assets/task6_zero_bilinear.png" alt="Pixel inspector, L_ZERO and P_LINEAR"/></div></td>
+			</tr>
+			<tr>
+				<td><figcaption><code>L_ZERO</code>, <code>P_NEAREST</code></figcaption></td>
+				<td><figcaption><code>L_ZERO</code>, <code>P_LINEAR</code></figcaption></td>
+			</tr>
+			<tr>
+				<td><img src="assets/task6_nearest_nearest.png" alt="L_NEAREST and P_NEAREST"/></td>
+				<td><img src="assets/task6_nearest_bilinear.png" alt="L_NEAREST and P_LINEAR"/></td>
+			</tr>
+			<tr>
+				<td><div class="inspector"><img src="assets/task6_nearest_nearest.png" alt="Pixel inspector, L_NEAREST and P_NEAREST"/></div></td>
+				<td><div class="inspector"><img src="assets/task6_nearest_bilinear.png" alt="Pixel inspector, L_NEAREST and P_LINEAR"/></div></td>
+			</tr>
+			<tr>
+				<td><figcaption><code>L_NEAREST</code>, <code>P_NEAREST</code></figcaption></td>
+				<td><figcaption><code>L_NEAREST</code>, <code>P_LINEAR</code></figcaption></td>
+			</tr>
+		</table>
+		<p class="note">
+			Each pair shows the full screenshot and, below it, the pixel-inspector region of the same screenshot enlarged on
+			this page (display cropping only; the image files are unmodified).
+		</p>
+		<ul>
+			<li>
+				<b><code>L_ZERO</code>, <code>P_NEAREST</code>.</b> The far part of the city turns into sparkly noise: isolated,
+				very bright pixels next to dark ones. Each pixel shows whichever single texel its sample happens to hit, out of
+				the many under its footprint.
+			</li>
+			<li>
+				<b><code>L_ZERO</code>, <code>P_LINEAR</code>.</b> Slightly softer, but the sparkle remains. Blending four
+				neighboring texels cannot represent a footprint that spans many more.
+			</li>
+			<li>
+				<b><code>L_NEAREST</code>, <code>P_NEAREST</code>.</b> Most of the sparkle is gone, because each lookup reads a
+				pre-averaged texel from a coarser level. The price is some blockiness: nearby pixels can round to different
+				levels, and within a level, nearest sampling shows the coarse texels as small flat blocks.
+			</li>
+			<li>
+				<b><code>L_NEAREST</code>, <code>P_LINEAR</code>.</b> The smoothest of the four: the level removes the aliasing,
+				and bilinear sampling hides the coarse level's texel grid.
+			</li>
+		</ul>
+		<p>
+			To put a number on the sparkle, I measured the mean absolute brightness difference between neighboring pixels
+			in a patch of the far region, where aliasing noise shows up as large pixel-to-pixel jumps. It is 33.5 for
+			<code>L_ZERO</code>/<code>P_NEAREST</code>, 30.3 with <code>P_LINEAR</code>, 13.6 for
+			<code>L_NEAREST</code>/<code>P_NEAREST</code>, and 10.3 for <code>L_NEAREST</code>/<code>P_LINEAR</code>. This is
+			only a proxy, since blurring lowers it too, but it matches what the screenshots show: level sampling removes most
+			of the noise, and bilinear pixel sampling smooths a bit more on top.
+		</p>
+
+		<h3>Tradeoffs: pixel sampling, level sampling, and samples per pixel</h3>
+		<p>
+			I timed <code>svg.draw()</code> on this scene for every combination (800 &times; 600, Release build on an Intel Core
+			i9-12900H, average of 5 draws, median of 3 runs; texture loading and mipmap generation are not included).
+		</p>
+		<table class="timing">
+			<tr><th>Level</th><th>Pixel</th><th>1 sample/px (ms)</th><th>16 samples/px (ms)</th></tr>
+			<tr><td><code>L_ZERO</code></td><td><code>P_NEAREST</code></td><td>6.1</td><td>84.6</td></tr>
+			<tr><td><code>L_ZERO</code></td><td><code>P_LINEAR</code></td><td>5.2</td><td>72.7</td></tr>
+			<tr><td><code>L_NEAREST</code></td><td><code>P_NEAREST</code></td><td>12.2</td><td>182.6</td></tr>
+			<tr><td><code>L_NEAREST</code></td><td><code>P_LINEAR</code></td><td>11.9</td><td>179.7</td></tr>
+			<tr><td><code>L_LINEAR</code></td><td><code>P_NEAREST</code></td><td>15.7</td><td>224.4</td></tr>
+			<tr><td><code>L_LINEAR</code></td><td><code>P_LINEAR</code></td><td>14.0</td><td>213.1</td></tr>
+		</table>
+		<ul>
+			<li>
+				<b>Pixel sampling (nearest vs. bilinear).</b> <i>Memory:</i> none extra. <i>Speed:</i> in theory bilinear costs
+				four texel reads instead of one, but in my measurements it was not slower, and was even slightly faster. The
+				extra three texels sit right next to the first one in memory, and the per-sample cost is dominated by the rest
+				of the work, such as interpolating texture coordinates. <i>Antialiasing:</i> it removes blockiness under
+				magnification and helps a little with mild minification, but it cannot fix strong minification, because four
+				texels are still far fewer than the pixel's footprint.
+			</li>
+			<li>
+				<b>Level sampling (mipmaps).</b> <i>Memory:</i> the whole pyramid adds one third to the texture's memory,
+				since \(1/4 + 1/16 + \dots \approx 1/3\); for my texture, 4.84 MB grows to 6.45 MB. <i>Speed:</i> about twice
+				as slow as <code>L_ZERO</code> here (12 vs. 6 ms), because every sample now interpolates three texture
+				coordinates instead of one and computes a level. <code>L_LINEAR</code> adds a second lookup per sample (about
+				15 ms). <i>Antialiasing:</i> by far the most effective tool against texture minification, at the cost of some
+				blur, and of visible level transitions with <code>L_NEAREST</code> that <code>L_LINEAR</code> smooths out.
+			</li>
+			<li>
+				<b>Samples per pixel (supersampling).</b> <i>Memory:</i> the sample buffer grows linearly with the rate. At
+				800 &times; 600 it is 5.8 MB at 1 sample and 92 MB at 16. <i>Speed:</i> the work per pixel also grows about
+				linearly; 16 samples took 14 to 15 times as long in every row of the table. <i>Antialiasing:</i> the most
+				general technique, since it also antialiases triangle edges, not just texture detail, but it is by far the most
+				expensive, and for texture minification it only brute-forces what a mipmap lookup gets almost for free.
+			</li>
+		</ul>
 
 		<h2>(Optional) Task 7: Extra Credit - Draw Something Creative!</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
