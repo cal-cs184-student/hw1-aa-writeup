@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A single triangle with a pure red, green and blue vertex. Every pixel's color
+     is (alpha, beta, gamma) = its barycentric coordinates with respect to the
+     red, green and blue vertices, so the image shows the coordinates directly. -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px"
+	 width="500.0px" height="500.0px" viewBox="0 0 500 500">
+
+<colortri points="250 40  40 440  460 440" colors="1 0 0 1  0 1 0 1  0 0 1 1"/>
+
+</svg>

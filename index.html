@@ -1100,7 +1100,112 @@
 		</p>
 
 		<h2>Task 4: Barycentric coordinates</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<h3>What barycentric coordinates are</h3>
+		<p>
+			Barycentric coordinates describe a point by how much each of a triangle's vertices "pulls" on it. Any point
+			\(P\) in the plane of triangle \(ABC\) can be written as a weighted average of the three vertices,
+			\[ P = \alpha A + \beta B + \gamma C, \qquad \alpha + \beta + \gamma = 1, \]
+			and the weights \((\alpha, \beta, \gamma)\) are its barycentric coordinates. \(P\) lies inside the triangle
+			exactly when all three weights are non-negative. A vertex's weight is 1 at that vertex, 0 everywhere on the
+			opposite edge, and changes linearly in between, so moving toward a vertex increases its weight.
+		</p>
+		<p>
+			A convenient way to see the weights is through areas. Connecting \(P\) to the three vertices splits the triangle
+			into three smaller triangles, and each vertex's weight is the area of the sub-triangle <i>opposite</i> it,
+			divided by the area of the whole triangle. As \(P\) approaches \(A\), the sub-triangle \(PBC\) grows to fill the
+			whole triangle and \(\alpha\) approaches 1.
+		</p>
+		<figure>
+			<svg viewBox="0 0 460 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Point P splits triangle ABC into three sub-triangles whose area ratios are the barycentric coordinates" style="width:100%; max-width:460px; font-family: Inter, sans-serif;">
+			<polygon points="258.5,228.5 40,330 420,330" fill="#E53935" fill-opacity="0.22" stroke="#E53935" stroke-width="1.2" stroke-dasharray="4 3"/>
+			<polygon points="258.5,228.5 420,330 230,40" fill="#43A047" fill-opacity="0.22" stroke="#43A047" stroke-width="1.2" stroke-dasharray="4 3"/>
+			<polygon points="258.5,228.5 230,40 40,330" fill="#1E63E9" fill-opacity="0.22" stroke="#1E63E9" stroke-width="1.2" stroke-dasharray="4 3"/>
+			<polygon points="230,40 40,330 420,330" fill="none" stroke="#222" stroke-width="2"/>
+			<circle cx="230" cy="40" r="6" fill="#E53935"/>
+			<text x="222" y="28" font-size="16" font-weight="600" fill="#E53935">A</text>
+			<circle cx="40" cy="330" r="6" fill="#43A047"/>
+			<text x="18" y="350" font-size="16" font-weight="600" fill="#43A047">B</text>
+			<circle cx="420" cy="330" r="6" fill="#1E63E9"/>
+			<text x="428" y="350" font-size="16" font-weight="600" fill="#1E63E9">C</text>
+			<circle cx="258.5" cy="228.5" r="5" fill="#222"/>
+			<text x="266.5" y="220.5" font-size="16" font-weight="600" fill="#222">P</text>
+			<text x="239.5" y="302.167" font-size="18" font-style="italic" text-anchor="middle" fill="#B71C1C">&#945;</text>
+			<text x="302.833" y="205.5" font-size="18" font-style="italic" text-anchor="middle" fill="#1B5E20">&#946;</text>
+			<text x="176.167" y="205.5" font-size="18" font-style="italic" text-anchor="middle" fill="#0D47A1">&#947;</text>
+			<text x="30" y="390" font-size="15" font-weight="600" fill="#222">Weight of each vertex =</text>
+			<text x="30" y="414" font-size="15" font-weight="400" fill="#222">area of the sub-triangle opposite it</text>
+			<text x="30" y="438" font-size="15" font-weight="400" fill="#222">divided by the area of ABC:</text>
+			<text x="30" y="486" font-size="15" font-weight="400" fill="#B71C1C">&#945; = area(PBC) / area(ABC) = 0.35</text>
+			<text x="30" y="510" font-size="15" font-weight="400" fill="#1B5E20">&#946; = area(PCA) / area(ABC) = 0.25</text>
+			<text x="30" y="534" font-size="15" font-weight="400" fill="#0D47A1">&#947; = area(PAB) / area(ABC) = 0.40</text>
+			<text x="30" y="582" font-size="15" font-weight="600" fill="#222">&#945; + &#946; + &#947; = 1</text>
+			<text x="30" y="606" font-size="15" font-weight="600" fill="#222">P = &#945;A + &#946;B + &#947;C</text>
+			</svg>
+			<figcaption>
+				Barycentric coordinates as area ratios. Each weight is the area of the sub-triangle opposite its vertex, shaded
+				in that vertex's color.
+			</figcaption>
+		</figure>
+		<p>
+			Because the weights say how close a point is to each vertex, they are exactly what is needed to blend values
+			that are only known at the vertices. For any per-vertex attribute \(V\) (a color here, texture coordinates in
+			Task 5),
+			\[ V(P) = \alpha V_A + \beta V_B + \gamma V_C \]
+			varies smoothly across the triangle and matches the given value at each vertex.
+		</p>
+		<figure>
+			<img src="assets/task4_rgb_triangle.png" alt="A triangle with a red, a green and a blue vertex, smoothly blended" style="width: 100%; max-width: 800px;"/>
+			<figcaption>
+				<a href="rgb_triangle.svg"><code>rgb_triangle.svg</code></a>: one triangle with a pure red, green and blue
+				vertex (default view, 1 sample per pixel).
+			</figcaption>
+		</figure>
+		<p>
+			With vertex colors \((1,0,0)\), \((0,1,0)\) and \((0,0,1)\), a pixel's color \((r, g, b)\) <i>is</i> its
+			barycentric coordinate triple \((\alpha, \beta, \gamma)\), so this image is a direct picture of the coordinates.
+			Each corner is a pure color because one weight is 1 there. Along the bottom edge the red weight is 0, so only
+			green and blue mix. At the centroid all three weights equal \(1/3\), so the color there is a neutral dark gray: the screenshot
+			measures \((83, 85, 86)\) at that pixel, close to the ideal \((85, 85, 85)\).
+		</p>
+
+		<h3>How I implemented it</h3>
+		<p>
+			The triangle traversal from Tasks 1 and 2 (bounding box, per-row spans, supersamples, three line tests) is now
+			a single shared function. For every covered sample it calls a small per-triangle function to get that sample's
+			color. <code>rasterize_triangle</code> passes one that always returns its flat color, and
+			<code>rasterize_interpolated_color_triangle</code> passes one that interpolates. After the refactor, every
+			flat-colored test scene still renders byte-identically to before.
+		</p>
+		<p>
+			Computing the weights is nearly free, because the inside test already evaluates each edge's line equation at
+			the sample. The line equation \(L_{BC}\) of edge \(BC\) is 0 on that edge and changes linearly, exactly like
+			\(\alpha\), so dividing by its value at the opposite vertex normalizes it:
+			\[ \alpha = \frac{L_{BC}(P)}{L_{BC}(A)}, \qquad \beta = \frac{L_{CA}(P)}{L_{CA}(B)}, \]
+			\[ \gamma = 1 - \alpha - \beta. \]
+			The two denominators are computed once per triangle, and each sample's color is then
+			\(\alpha\,c_A + \beta\,c_B + \gamma\,c_C\). Since the interpolation happens per supersample, supersampling from
+			Task 2 works unchanged: each supersample gets its own interpolated color, and resolving averages them. A
+			degenerate triangle (zero area) has no well-defined weights and is skipped.
+		</p>
+		<p>
+			Several mathematically equivalent ways to compute these weights round differently in floating point, and
+			the reference images are compared byte-for-byte. The formula above, which is the one from lecture, matched the
+			reference for <code>test7.svg</code> on all but one of its roughly one million pixels, and that pixel differs by a
+			single color level (129 vs. 130).
+		</p>
+
+		<h3>Result: <code>basic/test7.svg</code></h3>
+		<figure>
+			<img src="assets/task4_test7.png" alt="basic/test7.svg: a color wheel" style="width: 100%; max-width: 800px;"/>
+			<figcaption><code>basic/test7.svg</code> with the default view and 1 sample per pixel.</figcaption>
+		</figure>
+		<p>
+			The color wheel is a fan of 96 thin triangles around the center. Each triangle has a black vertex at the center
+			and two vertices on the rim colored with neighboring hues, so barycentric interpolation blends from black at the
+			center out to saturated colors at the rim, and between neighboring hues around the rim. Faint radial lines are
+			visible where adjacent triangles meet: interpolation is linear within each triangle, so the wheel's smooth hue
+			change is approximated piecewise, and the approximation shows along the triangle boundaries.
+		</p>
 
 		<h2>Task 5: "Pixel sampling" for texture mapping</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
