@@ -1208,7 +1208,125 @@
 		</p>
 
 		<h2>Task 5: "Pixel sampling" for texture mapping</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<h3>What pixel sampling is</h3>
+		<p>
+			Texture mapping gives each triangle vertex a texture coordinate \((u, v)\) into an image, the texture. For every
+			screen sample inside the triangle I interpolate \((u, v)\) with the barycentric coordinates from Task 4, which
+			tells me <i>where</i> in the texture that sample lands. That point is continuous, but the texture is a discrete
+			grid of colored texels, so the point usually falls between texel centers. <b>Pixel sampling</b> is the rule for
+			turning that continuous position into a color by reconstructing the texture between its texels.
+		</p>
+		<ul>
+			<li>
+				<b>Nearest.</b> Use the single texel whose center is closest to the sample. It is cheap (one texel read), but
+				the texture is effectively a grid of flat squares: magnified textures look blocky, and features narrower than a
+				texel can be skipped entirely.
+			</li>
+			<li>
+				<b>Bilinear.</b> Blend the four texels around the sample. With fractional offsets \(s, t \in [0, 1)\) from the
+				top-left of those four texel centers, it takes two horizontal lerps and one vertical lerp:
+				\[ c_{\text{top}} = (1 - s)\,c_{00} + s\,c_{10}, \]
+				\[ c_{\text{bottom}} = (1 - s)\,c_{01} + s\,c_{11}, \]
+				\[ c = (1 - t)\,c_{\text{top}} + t\,c_{\text{bottom}}. \]
+				It costs four texel reads, and the reconstructed texture is continuous, so colors change smoothly between
+				texel centers instead of jumping at texel borders.
+			</li>
+		</ul>
+
+		<h3>How I implemented it</h3>
+		<p>
+			<code>rasterize_textured_triangle</code> reuses the shared traversal from Task 4. For each covered sample it
+			computes the barycentric coordinates, interpolates \((u, v)\), stores it in a <code>SampleParams</code> together
+			with the current pixel and level sampling modes, and returns <code>tex.sample(sp)</code>. For now,
+			<code>Texture::sample</code> always uses the full-resolution level 0 and dispatches on the pixel sampling mode;
+			Task 6 adds the mipmap level.
+		</p>
+		<p>
+			Both samplers place texel \(i\) of a \(w\)-texel-wide level at \(u = i / (w - 1)\), so \(u = 0\) and \(u = 1\) hit
+			the centers of the first and last texel. Nearest rounds \(u\,(w - 1)\) and \(v\,(h - 1)\) to the closest integer.
+			Bilinear takes the floor of the same scaled position as the top-left texel and the fractional part as \((s, t)\).
+			Neighbors past the edge are clamped to the border texel. With this convention all six textured reference images
+			(<code>basic/test8.svg</code> and <code>svg/texmap/*</code>) match byte-for-byte. I also made both samplers check
+			that the requested mipmap level exists <i>before</i> indexing it, rather than after.
+		</p>
+
+		<h3>Comparison: nearest vs. bilinear, 1 vs. 16 samples per pixel</h3>
+		<p>
+			All four screenshots are <code>svg/texmap/test1.svg</code> with the default view (800 &times; 600) and the pixel
+			inspector at the same spot: a crossing of two grid lines in the ocean west of Africa. The world map texture is
+			2058 &times; 1036 texels, and the visible part is drawn about 330 pixels wide and tall, so each screen pixel
+			covers roughly 4.6 texels horizontally and 2.3 vertically. The texture is being <i>minified</i>, and the grid
+			lines are only about one texel wide.
+		</p>
+		<table class="shots">
+			<tr>
+				<td><img src="assets/task5_nearest_1.png" alt="Nearest, 1 sample per pixel"/></td>
+				<td><img src="assets/task5_nearest_16.png" alt="Nearest, 16 samples per pixel"/></td>
+			</tr>
+			<tr>
+				<td><div class="inspector"><img src="assets/task5_nearest_1.png" alt="Pixel inspector, nearest, 1 sample per pixel"/></div></td>
+				<td><div class="inspector"><img src="assets/task5_nearest_16.png" alt="Pixel inspector, nearest, 16 samples per pixel"/></div></td>
+			</tr>
+			<tr>
+				<td><figcaption>Nearest, 1 sample per pixel</figcaption></td>
+				<td><figcaption>Nearest, 16 samples per pixel</figcaption></td>
+			</tr>
+			<tr>
+				<td><img src="assets/task5_bilinear_1.png" alt="Bilinear, 1 sample per pixel"/></td>
+				<td><img src="assets/task5_bilinear_16.png" alt="Bilinear, 16 samples per pixel"/></td>
+			</tr>
+			<tr>
+				<td><div class="inspector"><img src="assets/task5_bilinear_1.png" alt="Pixel inspector, bilinear, 1 sample per pixel"/></div></td>
+				<td><div class="inspector"><img src="assets/task5_bilinear_16.png" alt="Pixel inspector, bilinear, 16 samples per pixel"/></div></td>
+			</tr>
+			<tr>
+				<td><figcaption>Bilinear, 1 sample per pixel</figcaption></td>
+				<td><figcaption>Bilinear, 16 samples per pixel</figcaption></td>
+			</tr>
+		</table>
+		<p class="note">
+			Each pair shows the full screenshot and, below it, the pixel-inspector region of the same screenshot enlarged on
+			this page (display cropping only; the image files are unmodified).
+		</p>
+		<ul>
+			<li>
+				<b>Nearest, 1 sample per pixel.</b> The grid lines break into disconnected bright white segments with gaps.
+				Each pixel reads one texel out of the several it covers, so a one-texel-wide line is hit on some pixels and
+				missed on others.
+			</li>
+			<li>
+				<b>Bilinear, 1 sample per pixel.</b> The lines are much more continuous. Each pixel now blends the four texels
+				around its sample, so a pixel near a line picks up part of the line's color even when its sample does not
+				land exactly on it. The brightness still varies along the line, because four texels do not cover a pixel's
+				whole footprint of about 4.6 &times; 2.3 texels.
+			</li>
+			<li>
+				<b>Nearest, 16 samples per pixel.</b> The lines become continuous and fainter. Sixteen samples spread over the
+				pixel read sixteen different texels, and averaging them approximates the fraction of the pixel the line covers.
+			</li>
+			<li>
+				<b>Bilinear, 16 samples per pixel.</b> This is the smoothest and most even result: supersampling covers the
+				pixel's footprint, and bilinear smooths each individual sample.
+			</li>
+		</ul>
+		<p>
+			Supersampling and bilinear filtering attack the same problem at different scales. Supersampling takes more
+			samples in <i>screen</i> space, while bilinear filtering makes each sample read a smoother version of the
+			texture. With 16 samples per pixel, the gap between nearest and bilinear becomes much smaller, because the
+			averaging over many samples already hides most of nearest's errors. Measured over the whole map in these
+			screenshots, the mean per-pixel difference between the two methods drops from 2.26 color levels at 1 sample per
+			pixel to 0.78 at 16.
+		</p>
+		<p>
+			The two methods differ most when the texture is <b>magnified</b>, with one texel covering several pixels. Nearest
+			then shows each texel as a visible flat square with hard edges, while bilinear produces smooth gradients between
+			texel centers. They also differ, as here, when the texture has sharp features about one texel wide and each pixel
+			covers only a few texels, because bilinear picks up features that nearest steps over. They differ little when the
+			texture is smooth (low-frequency), since neighboring texels are then similar and blending changes almost nothing.
+			They also both fail when the texture is <b>strongly minified</b>. If a pixel covers dozens of texels, reading
+			just one or four of them is still a tiny sample of the pixel's footprint, so both alias. Fixing that requires
+			pre-filtered, lower-resolution textures, which is the mipmapping of Task 6.
+		</p>
 
 		<h2>Task 6: "Level Sampling" with mipmaps for texture mapping</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
